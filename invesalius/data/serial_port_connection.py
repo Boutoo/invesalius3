@@ -21,12 +21,11 @@ import queue
 import threading
 import time
 import numpy as np
-
+import wx
 
 from invesalius import constants
 from invesalius.pubsub import pub as Publisher
 import invesalius.constants as const
-
 
 class SerialPortConnection(threading.Thread):
     def __init__(self, com_port, baud_rate, serial_port_queue, event, sleep_nav):
@@ -94,15 +93,22 @@ class SerialPortConnection(threading.Thread):
 
     def PulseGenerator(self):
         """Function to send signals every X to Y second through the COM port."""
+        pulse_count = 0
         while const.PULSE_GENERATOR_ON:
             try:
                 if self.connection:
-                    self.connection.write(b'\x00')
-                    self.connection.write(b'\xff')
-                    # Random between 2 and 3 seconds
-                    random_time = np.random.uniform(2, 3)
-                    print(f"Signal sent. Waiting for {random_time:.2f} seconds...")
-                    time.sleep(random_time)
+                    if const.PERMISSION_TO_STIMULATE:
+                        print("Sending pulse...")
+                        self.connection.write(b'\x00')
+                        self.connection.write(b'\xff')
+                        pulse_count += 1
+                        # Random between 2 and 3 seconds
+                        random_time = np.random.uniform(2, 3)
+                        print(f"Waiting for {random_time:.2f} seconds...")
+                        time.sleep(random_time)
+                    else:
+                        print("Please, make sure that you are on target. (Or allow off target TMS).")
+                        time.sleep(0.01)
                 else:
                     print("Error: Serial connection is not established.")
                     break

@@ -246,6 +246,7 @@ class Navigation(metaclass=Singleton):
 
     def CoilAtTarget(self, state):
         self.coil_at_target = state
+        self.PedalStateChanged(True, None)
 
     def UpdateNavSleep(self, sleep):
         self.sleep_nav = sleep
@@ -263,7 +264,6 @@ class Navigation(metaclass=Singleton):
 
     def GetObjectRegistration(self):
         return self.object_registration
-    
 
     def TrackObject(self, enabled=False):
         self.track_obj = enabled
@@ -296,16 +296,18 @@ class Navigation(metaclass=Singleton):
                                   not self.lock_to_target or \
                                   const.ALLOW_OFF_TARGET_TMS
         print("Permission to stimulate: ", permission_to_stimulate)
-        if state and permission_to_stimulate:
+        const.PERMISSION_TO_STIMULATE = permission_to_stimulate
+        
+        if key_code == const.KEYSTROKE_TOGGLE_TMS_GENERATOR:
+            print("Toggling TMS generator...")
+            self.serial_port_connection.TogglePulseGenerator()
+        elif key_code == const.KEYSTROKE_ALLOW_OFF_TARGET_TMS:
+            const.ALLOW_OFF_TARGET_TMS = not const.ALLOW_OFF_TARGET_TMS
+            print(f"Allow off target stimulation : {const.ALLOW_OFF_TARGET_TMS}")
+        elif state and permission_to_stimulate:
             if key_code == const.KEYSTROKE_TRIGGER_TMS:
                 print("Sending pulse...")
                 self.serial_port_connection.SendPulse()
-            elif key_code == const.KEYSTROKE_TOGGLE_TMS_GENERATOR:
-                print("Toggling TMS generator...")
-                self.serial_port_connection.TogglePulseGenerator()
-            elif key_code == const.KEYSTROKE_ALLOW_OFF_TARGET_TMS:
-                const.ALLOW_OFF_TARGET_TMS = not const.ALLOW_OFF_TARGET_TMS
-                print(f"Allow off target stimulation : {const.ALLOW_OFF_TARGET_TMS}")
 
     def EstimateTrackerToInVTransformationMatrix(self, tracker, image):
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()
