@@ -295,8 +295,9 @@ class Navigation(metaclass=Singleton):
         permission_to_stimulate = (self.lock_to_target and self.coil_at_target) or \
                                   not self.lock_to_target or \
                                   const.ALLOW_OFF_TARGET_TMS
-        print("Permission to stimulate: ", permission_to_stimulate)
-        const.PERMISSION_TO_STIMULATE = permission_to_stimulate
+        if permission_to_stimulate != const.PERMISSION_TO_STIMULATE:
+            print(f"Permission to stimulate: {permission_to_stimulate}")
+            const.PERMISSION_TO_STIMULATE = permission_to_stimulate
         
         if key_code == const.KEYSTROKE_TOGGLE_TMS_GENERATOR:
             print("Toggling TMS generator...")
