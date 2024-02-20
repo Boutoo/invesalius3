@@ -44,6 +44,9 @@ class PedalConnector:
         self.neuronavigation_api = neuronavigation_api
         self.frame = None
 
+        # Dictionary with flags for key states
+        self.key_states = {}
+
         if const.KEYSTROKE_PEDAL_ENABLED:
             self._set_frame(window)
             self.panel_callbacks = {}
@@ -63,16 +66,20 @@ class PedalConnector:
 
         def OnKeyPress(evt, state):
             key_code = evt.GetKeyCode()
-            if key_code == const.KEYSTROKE_PEDAL_KEY:
+            if key_code not in self.key_states or not self.key_states[key_code]:
+                print("Key pressed: " + str(key_code))
+                #self.key_states[key_code] = True
                 for name in list(self.panel_callbacks[panel_id].keys()):
                     callback, remove_when_released = self.panel_callbacks[panel_id][name]
-                    callback(state)
+                    callback(state, key_code)
                     if remove_when_released:
                         self.panel_callbacks[panel_id].pop(name)
             evt.Skip()
+
         panel.Bind(wx.EVT_CHAR_HOOK, partial(OnKeyPress, state=True))
 
     def add_callback(self, name, callback, remove_when_released=False, panel=None):
+        self.panel_callbacks = {}
 
         if self.pedal_connection is not None:
             self.pedal_connection.add_callback(name, callback, remove_when_released)
@@ -83,13 +90,13 @@ class PedalConnector:
         panel = panel or self.frame
         if panel is not None and const.KEYSTROKE_PEDAL_ENABLED:
             panel_id = panel.GetId()
+            print(f"DEBBUGING: {panel_id}")
             if panel_id not in self.panel_callbacks:
                 self._bind_callbacks_to_panel(panel)
 
             self.panel_callbacks[panel_id].update({name: (callback, remove_when_released)})
 
     def remove_callback(self, name, panel=None):
-
         if self.pedal_connection is not None:
             self.pedal_connection.remove_callback(name)
 
@@ -98,7 +105,9 @@ class PedalConnector:
 
         panel = panel or self.frame
         if panel is not None and const.KEYSTROKE_PEDAL_ENABLED:
-            self.panel_callbacks[panel.GetId()].pop(name)
+            self.panel_callbacks = {}
+
+        panel.Unbind(wx.EVT_CHAR_HOOK)
 
 
 class MidiPedal(Thread, metaclass=Singleton):

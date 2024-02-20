@@ -289,15 +289,23 @@ class Navigation(metaclass=Singleton):
         fre = icp.icp_fre if icp.use_icp else self.fre
         return fre, fre <= const.FIDUCIAL_REGISTRATION_ERROR_THRESHOLD
 
-    def PedalStateChanged(self, state):
+    def PedalStateChanged(self, state, key_code):
         if not self.serial_port_in_use:
             return
-
         permission_to_stimulate = (self.lock_to_target and self.coil_at_target) or \
-                                  not self.lock_to_target
-
+                                  not self.lock_to_target or \
+                                  const.ALLOW_OFF_TARGET_TMS
+        print("Permission to stimulate: ", permission_to_stimulate)
         if state and permission_to_stimulate:
-            self.serial_port_connection.SendPulse()
+            if key_code == const.KEYSTROKE_TRIGGER_TMS:
+                print("Sending pulse...")
+                self.serial_port_connection.SendPulse()
+            elif key_code == const.KEYSTROKE_TOGGLE_TMS_GENERATOR:
+                print("Toggling TMS generator...")
+                self.serial_port_connection.TogglePulseGenerator()
+            elif key_code == const.KEYSTROKE_ALLOW_OFF_TARGET_TMS:
+                const.ALLOW_OFF_TARGET_TMS = not const.ALLOW_OFF_TARGET_TMS
+                print(f"Allow off target stimulation : {const.ALLOW_OFF_TARGET_TMS}")
 
     def EstimateTrackerToInVTransformationMatrix(self, tracker, image):
         tracker_fiducials, tracker_fiducials_raw = tracker.GetTrackerFiducials()
@@ -412,8 +420,11 @@ class Navigation(metaclass=Singleton):
                 # jobs.daemon = True
                 jobs.start()
                 # del jobs
+            
+            # Add only if not previously added
+            if self.pedal_connector.panel_callbacks == {}:
+                self.pedal_connector.add_callback('navigation', self.PedalStateChanged)
 
-            self.pedal_connector.add_callback('navigation', self.PedalStateChanged)
 
     def StopNavigation(self):
         self.event.set()

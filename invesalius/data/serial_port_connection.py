@@ -20,10 +20,12 @@
 import queue
 import threading
 import time
+import numpy as np
 
 
 from invesalius import constants
 from invesalius.pubsub import pub as Publisher
+import invesalius.constants as const
 
 
 class SerialPortConnection(threading.Thread):
@@ -41,6 +43,9 @@ class SerialPortConnection(threading.Thread):
         self.serial_port_queue = serial_port_queue
         self.event = event
         self.sleep_nav = sleep_nav
+
+        # Pulse Generator
+        self.sending_signal = False
 
     def Connect(self):
         if self.com_port is None:
@@ -65,9 +70,45 @@ class SerialPortConnection(threading.Thread):
     def SendPulse(self):
         try:
             self.connection.send_break(constants.PULSE_DURATION_IN_MILLISECONDS / 1000)
+            self.connection.write(b'\x00')
+            self.connection.write(b'\xff')
             Publisher.sendMessage('Serial port pulse triggered')
         except:
             print("Error: Serial port could not be written into.")
+
+    def TogglePulseGenerator(self):
+        const.PULSE_GENERATOR_ON = not const.PULSE_GENERATOR_ON
+        if const.PULSE_GENERATOR_ON:
+            # Start the pulse generator thread
+            self.pulse_generator_thread = threading.Thread(target=self.PulseGenerator)
+            self.pulse_generator_thread.daemon = True  # Daemonize the thread so it terminates when the main thread exits
+            self.pulse_generator_thread.start()
+            print("Pulse generator started.")
+        else:
+            # Terminate the pulse generator thread (if it's running)
+            if hasattr(self, 'pulse_generator_thread') and self.pulse_generator_thread.is_alive():
+                print("Stopping pulse generator.")
+                self.pulse_generator_thread.join()  # Wait for the thread to terminate
+            else:
+                print("Pulse generator is not running.")
+
+    def PulseGenerator(self):
+        """Function to send signals every X to Y second through the COM port."""
+        while const.PULSE_GENERATOR_ON:
+            try:
+                if self.connection:
+                    self.connection.write(b'\x00')
+                    self.connection.write(b'\xff')
+                    # Random between 2 and 3 seconds
+                    random_time = np.random.uniform(2, 3)
+                    print(f"Signal sent. Waiting for {random_time:.2f} seconds...")
+                    time.sleep(random_time)
+                else:
+                    print("Error: Serial connection is not established.")
+                    break
+            except Exception as e:
+                print(f"Error in PulseGenerator: {e}")
+                break
 
     def run(self):
         while not self.event.is_set():
