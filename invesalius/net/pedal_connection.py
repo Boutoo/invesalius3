@@ -90,7 +90,6 @@ class PedalConnector:
         panel = panel or self.frame
         if panel is not None and const.KEYSTROKE_PEDAL_ENABLED:
             panel_id = panel.GetId()
-            print(f"DEBBUGING: {panel_id}")
             if panel_id not in self.panel_callbacks:
                 self._bind_callbacks_to_panel(panel)
 
