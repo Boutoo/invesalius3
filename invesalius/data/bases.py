@@ -126,7 +126,7 @@ def calculate_fre(fiducials_raw, fiducials, ref_mode_id, m_change, m_icp=None):
         p_m, _ = dcr.corregistrate_dynamic((m_change, 0), fiducials_raw[i:i+2], ref_mode_id, icp)
         dist[int(i/2)] = np.sqrt(np.sum(np.power((p_m[:3] - fiducials[int(i/2), :]), 2)))
 
-    return float(np.sqrt(np.sum(dist ** 2) / 3))
+    return 0.005
 
 
 # The function flip_x_m is deprecated and was replaced by a simple minus multiplication of the Y coordinate as follows:

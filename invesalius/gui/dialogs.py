@@ -24,7 +24,7 @@ import random
 import sys
 import time
 from functools import partial
-
+from invesalius import constants as const
 from concurrent import futures
 
 if sys.platform == 'win32':
@@ -4121,7 +4121,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         if markers_flag[:2] >= [1, 1]:
             self.AddMarker(3, (1, 0, 0), current_coord)
             self.txt_markers_not_detected.VisibilityOff()
-            if self.DistanceBetweenPointAndSurface(self.surface, self.point_coord[-1]) >= 20:
+            if self.DistanceBetweenPointAndSurface(self.surface, self.point_coord[-1]) >= const.MAXIMUM_DISTANCE_FROM_SURFACE:
                 self.OnDeleteLastPoint()
                 ReportICPPointError()
             else:
